@@ -8,7 +8,7 @@ rm(list = ls())
 gc()
 cat("\014")
 ## define the working directory
-setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Project")
+setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Assignment")
 getwd()
 
 # relevant packages
@@ -61,7 +61,7 @@ ggplot(table, aes(x = Years, y = Countries)) + geom_line(color = '#4C72B0') +
   theme(axis.ticks.margin = unit(0.1, "cm")) 
 
 # save as pdf
-ggsave("results/countries.eps", width = 6, height = 4, units = "in")
+ggsave("results/descriptives/countries.eps", width = 6, height = 4, units = "in")
 
 ## let's now create a data frame with the number of speeches per region per year
 speeches_region <- data.frame(year = 1973:2022, africa = NA, asia = NA, europe = NA, americas = NA, oceania = NA)
@@ -116,7 +116,7 @@ ggplot(speeches_region, aes(x = year, y = africa)) +
   theme(panel.grid.minor = element_line(color = "grey", size = 0.5))
 
 # save as pdf
-ggsave("results/speeches_region.eps", width = 6, height = 4, units = "in")
+ggsave("results/descriptives/speeches_region.eps", width = 6, height = 4, units = "in")
 
 
 
@@ -192,7 +192,7 @@ ggplot(words, aes(x = year, y = mean)) +
   theme(panel.grid.minor = element_line(color = "grey", size = 0.5))
 
 # save as pdf
-ggsave("results/words_cleaned.eps", width = 6, height = 4, units = "in")
+ggsave("results/descriptives/words_cleaned.eps", width = 6, height = 4, units = "in")
 
 ## number of unique countries in 1973
 ## highest number of unique countries 
@@ -236,5 +236,5 @@ wordcloud(rownames(mydata.termcounts),
           colors = brewer.pal(10,"Dark2"))
 
 # save as pdf
-dev.copy2pdf(file = "results/wordcloud.pdf")
+dev.copy2pdf(file = "results/descriptives/wordcloud.pdf")
 

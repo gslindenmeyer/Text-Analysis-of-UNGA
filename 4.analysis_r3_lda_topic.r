@@ -8,12 +8,12 @@ rm(list = ls())
 gc()
 cat("\014")
 ## define the working directory
-setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Project")
+setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Assignment")
 getwd()
 
 # relevant packages
-packages <- c("tidyverse", "tm", "slam", "rvest", "xml2", "stringdist", "countrycode", "quanteda",
-              "SnowballC", "ggformula", "ggpubr", "scales", "readxl" , "stopwords", "wordcloud",
+packages <- c("tidyverse", "tm", "slam", "rvest", "xml2", "stringdist", "countrycode", "quanteda", "corrplot",
+              "SnowballC", "ggformula", "ggpubr", "scales", "readxl" , "stopwords", "wordcloud", "fixest",
               "syuzhet", "tidytext", "gridExtra", "ggstream", "topicmodels", "data.table", "seededlda")
 
 # check if installed, otherwise, install, omit warnings
@@ -23,6 +23,9 @@ for(p in packages){
     library(p, character.only = TRUE)
   }
 }
+
+## set seed
+set.seed(1000)
 
 ## let's do the third analysis: 
 ## (3) Analysis of the distribution of topics being covered 
@@ -34,104 +37,6 @@ load("data/corpus/stemmed/all_stemmed.rda")
 
 continents <- unique(mydata$continent)
 years <- unique(mydata$year)
-
-## we want to use LDA 
-dtm1_in <- dtm1[sample(c(1:dim(dtm1)[1]),500),]
-
-set.seed(1973) # 
-m1_in <- topicmodels::LDA(x = dtm1_in, 
-                          k = 7, 
-                          method = "Gibbs",
-                          control = list(alpha = 0.1))
-tmp <- posterior(m1_in, dtm1_in)
-(terms1_in <- terms(m1_in, 10))
-
-
-## print the 5 rows and cols of tmp
-
-View(tmp)
-
-
-
-
-
-# Define the number of topics
-num_topics <- 4  # 8 topics corresponding to MDGs
-
-# Define your topics and keywords
-topics_and_keywords <- list(
-  Topic1 = c("nation", "countri", "develop"),
-  Topic2 = c("power", "imperialist", "super"),
-  Topic3 = c("pandem", "pacif", "peac")
-)
-
-
-
-
-# Initialize the LDA model with the custom prior
-set.seed(1973)
-custom_lda_model <- LDA(x = dtm1_in, k = num_topics, method = "Gibbs", 
-                        control = list(alpha = 0.1), 
-                        init = list(beta = topics_and_keywords))
-(terms1_in <- terms(custom_lda_model, 20))
-
-
-
-
-dict <- dictionary(list(people = c("family", "couple", "kids"),
-                        space = c("alien", "planet", "space"),
-                        moster = c("monster*", "ghost*", "zombie*"),
-                        war = c("war", "soldier*", "tanks"),
-                        crime = c("crime*", "murder", "killer")))
-## let's stem the dict
-require(seededlda)
-require(quanteda)
-
-lda_seed <- textmodel_seededlda(dtm1_in, dict, residual = TRUE, min_termfreq = 10,
-                                max_iter = 500)
-terms(lda_seed)
-topics(lda_seed)
-
-
-deltaS <- simple_triplet_matrix(i, j, v = rep(SeedWeight, 25),
-                                nrow = 6, ncol = ncol(AssociatedPress))
-
-
-
-
-
-#wordStem(c("win", "winning", "winner"))
-
-
-data("AssociatedPress", package = "topicmodels")
-
-## We fit 6 topics.
-## We specify five seed words for five topics, the sixth topic has no
-## seed words.
-set.seed(123)
-i <- rep(1:5, each = 5)
-j <- sample(1:ncol(AssociatedPress), 25)
-SeedWeight <- 500 - 0.1
-deltaS <- simple_triplet_matrix(i, j, v = rep(SeedWeight, 25),
-                                nrow = 6, ncol = ncol(AssociatedPress))
-set.seed(1000)
-ldaS <- LDA(AssociatedPress, k = 6, method = "Gibbs", seedwords = deltaS, 
-            control = list(alpha = 0.1, best = TRUE,
-                           verbose = 500, burnin = 500, iter = 100, thin = 100, prefix = character()))
-
-apply(deltaS, 1, function(x) which(x == SeedWeight))
-apply(posterior(ldaS)$terms, 1, function(x) order(x, decreasing = TRUE)[1:5])
-
-
-toks <- quanteda::tokens(corp)
-
-dfmt <- dfm(toks) |> 
-  dfm_remove(stopwords("en")) |>
-  dfm_remove("*@*") |>
-  dfm_trim(max_docfreq = 0.1, docfreq_type = "prop")
-
-
-
 
 corp2 <- corpus(
   mydata,
@@ -152,7 +57,7 @@ dfmt <- dfm(toks_stemmed) %>%
 mdg_dict <- dictionary(list(
   MDG1 = c("poverty", "hunger", "starvation", "malnutrition", "deprivation", "famine", "undernourished", "employment", "income", "indigence", "extreme poverty", "nutrition", "food security"),
   MDG2 = c("education", "schooling", "literacy", "dropout", "teachers", "primary","access", "scholarship", "academia", "learning", "basic"),
-  MDG3 = c("gender", "equality", "empowerment", "women", "parity", "female", "girls", "discrimination", "equity", "gender disparity", "rights", "mainstreaming", "female"),
+  MDG3 = c("gender", "equality", "empowerment", "women", "parity", "female", "girls", "discrimination", "equity", "gender disparity", "rights", "mainstreaming"),
   MDG4 = c("child", "infant", "pediatric", "survival", "neonatal", "under-five", "kids"),
   MDG5 = c("maternal", "maternity", "antenatal", "postnatal", "childbirth", "maternal mortality", "pregnancy", "birth", "reproductive health", "fertility", "midwifery", "motherhood", "care"),
   MDG6 = c("disease", "HIV", "AIDS", "malaria", "tuberculosis", "epidemic", "healthcare", "vaccine", "virus", "infection", "disease","prevention", "HIV", "public", "malaria"),
@@ -172,8 +77,6 @@ mdg_dict_stemmed <- dictionary(lapply(mdg_dict, stem_words))
 # View the stemmed dictionary
 print(mdg_dict_stemmed)
 
-## set seed
-set.seed(1000)
 
 ## let's see how long it takes to run
 start <- Sys.time()
@@ -313,7 +216,6 @@ save(merged_data, file = "data/regression_merged_data.rda")
 merged_data$gdp_growth_rate <- merged_data$gdp_growth/100 + 1
 ## let's do some correlations
 corr_matrix <- merged_data %>% select(MDG1, MDG2, MDG3, MDG4, MDG5, MDG6, MDG7, MDG8, Conflict_and_War, gdp_growth_rate) %>% cor(use  = "complete")
-library(corrplot)
 
 # plot correlation matrix
 corrplot(corr_matrix, method = "color", type = 'lower',
@@ -325,7 +227,6 @@ title("Correlation Matrix")
 
 ## let's run a regression of gdp growth on topic distribution
 
-library(fixest)
 # let's transform variables in log
 merged_data$log_gdp_growth <- log(merged_data$gdp_growth/100 + 1)
 merged_data$log_MDG1 <- log(merged_data$MDG1 + 1)

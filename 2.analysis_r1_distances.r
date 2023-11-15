@@ -8,7 +8,7 @@ rm(list = ls())
 gc()
 cat("\014")
 ## define the working directory
-setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Project")
+setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Assignment")
 getwd()
 
 # relevant packages

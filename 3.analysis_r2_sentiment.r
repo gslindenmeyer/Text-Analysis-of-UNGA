@@ -8,7 +8,7 @@ rm(list = ls())
 gc()
 cat("\014")
 ## define the working directory
-setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Project")
+setwd("D:/GDrive/Faculdade/Mestrado/3.WS 2023/Lecture - Programming for Economists/Assignment")
 getwd()
 
 # relevant packages
@@ -23,6 +23,9 @@ for(p in packages){
     library(p, character.only = TRUE)
   }
 }
+
+## set seed
+set.seed(1000)
 
 ## let's do the second analysis: 
 ## (2) Sentiment analysis of the speeches from each region over time. In question format: 
@@ -54,7 +57,7 @@ for(i in 1:length(continents)) {
     ## do a median aggregation
     
     summ.sentiment.df <- sentiment.df %>% summarise_all(sum)
-    summ.sentiment.df$total <- sum(median.sentiment.df)
+    summ.sentiment.df$total <- sum(summ.sentiment.df)
     summ.sentiment.df$year <- t
     summ.sentiment.df$continent <- continents[i]
     sentiment_matrix <- rbind(sentiment_matrix, summ.sentiment.df)
@@ -74,6 +77,7 @@ load("data/sentiment_matrix.rda")
 
 
 ## now let's produce the loop
+continents <- unique(sentiment_matrix$continent)
 i <- continents[1]
 # Loop over each continent
 for(i in continents) {
