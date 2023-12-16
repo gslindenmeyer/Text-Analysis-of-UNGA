@@ -226,6 +226,9 @@ text_frame <- cbind(text_frame,scores[,c("Flesch.Kincaid","Flesch")])
 
 cor(text_frame, use = "pairwise.complete.obs")
 
+# combine scores with mydata.wordcounts
+mydata.wordcounts <- cbind(mydata.wordcounts,scores[,c("Flesch.Kincaid","Flesch")])
+
 ### let's create some word clouds
 
 wordcloud(rownames(mydata.termcounts), 

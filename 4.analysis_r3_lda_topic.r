@@ -25,7 +25,7 @@ for(p in packages){
 }
 
 ## set seed
-set.seed(1000)
+set.seed(123)
 
 ## let's do the third analysis: 
 ## (3) Analysis of the distribution of topics being covered 
@@ -55,14 +55,14 @@ dfmt <- dfm(toks_stemmed) %>%
 
 
 mdg_dict <- dictionary(list(
-  MDG1 = c("poverty", "hunger", "starvation", "malnutrition", "deprivation", "famine", "undernourished", "employment", "income", "indigence", "extreme poverty", "nutrition", "food security"),
+  MDG1 = c("poverty", "hunger", "starvation", "malnutrition", "deprivation", "famine", "undernourished", "employment", "income", "indigence", "extreme", "nutrition", "food"),
   MDG2 = c("education", "schooling", "literacy", "dropout", "teachers", "primary","access", "scholarship", "academia", "learning", "basic"),
-  MDG3 = c("gender", "equality", "empowerment", "women", "parity", "female", "girls", "discrimination", "equity", "gender disparity", "rights", "mainstreaming"),
-  MDG4 = c("child", "infant", "pediatric", "survival", "neonatal", "under-five", "kids"),
-  MDG5 = c("maternal", "maternity", "antenatal", "postnatal", "childbirth", "maternal mortality", "pregnancy", "birth", "reproductive health", "fertility", "midwifery", "motherhood", "care"),
+  MDG3 = c("gender", "equality", "empowerment", "women", "parity", "female", "girls", "discrimination", "equity", "disparity", "rights", "mainstreaming"),
+  MDG4 = c("child", "infant", "pediatric", "survival", "neonatal", "baby", "children", "kids", "adolescent"),
+  MDG5 = c("maternal", "maternity", "antenatal", "postnatal", "childbirth", "pregnancy", "birth", "reproductive", "fertility", "midwifery", "motherhood", "care"),
   MDG6 = c("disease", "HIV", "AIDS", "malaria", "tuberculosis", "epidemic", "healthcare", "vaccine", "virus", "infection", "disease","prevention", "HIV", "public", "malaria"),
   MDG7 = c("environmental", "climate", "sustainability", "sanitation", "water", "renewable", "energy", "conservation", "biodiversity", "ecology", "natural", "resources", "clean","water", "sustainable", "development", "sanitation","access"),
-  MDG8 = c("global partnership", "trade", "economic","development", "aid", "debt", "technology","transfer", "financial","system", "LDCs", "landlocked", "states", "affordable", "private","sector", "information","technology"),
+  MDG8 = c("global", "partnership", "trade", "economic","development", "aid", "debt", "technology","transfer", "financial","system", "LDCs", "landlocked", "states", "affordable", "private","sector", "information","technology"),
   Conflict_and_War = c("war", "conflict", "military", "violence", "terrorism", "battle", "soldier", "weapons", "nuclear", "armament")
 ))
 
@@ -80,7 +80,7 @@ print(mdg_dict_stemmed)
 
 ## let's see how long it takes to run
 start <- Sys.time()
-lda_seed <- textmodel_seededlda(dfmt, mdg_dict_stemmed, residual = 2, auto_iter = T)
+lda_seed <- textmodel_seededlda(dfmt, mdg_dict_stemmed, residual = 3, max_iter = 500)
 end <- Sys.time()
 end - start
 
@@ -204,9 +204,25 @@ panel_data <- gdp_long %>%
 
 panel_data$year <- as.character(panel_data$year)
 
+## expand the panel with the world bank panel data
+library(ExPanDaR)
+worldbank_var_def <- worldbank_var_def %>%
+  filter(var_name != "population",
+         var_name != "gdp",
+         var_name != "time")
+wb <- calc_variables(worldbank, 
+                     worldbank_var_def$var_name, 
+                     worldbank_var_def$var_def,
+                     worldbank_var_def$type)
+
+# merge with growth data by country name
+wb <- as_tibble(wb)
+panel_data <- merge(panel_data, wb, by.x = c("country", "year"), by.y = c("country", "year"))
+
+
 str(all.topic.dist, 5)
 
-merged_data <- merge(panel_data, all.topic.dist, by.x = c("year", "country_code"), by.y = c("year", "countrycode_fix"), all = TRUE)
+merged_data <- merge(panel_data, all.topic.dist, by.x = c("year", "country_code"), by.y = c("year", "countrycode_fix"), suffixes = "")
 
 ## delete merged_data empty doc_id 
 merged_data <- merged_data %>% filter(!is.na(doc_id))
@@ -215,7 +231,21 @@ merged_data <- merged_data %>% filter(!is.na(doc_id))
 save(merged_data, file = "data/regression_merged_data.rda")
 merged_data$gdp_growth_rate <- merged_data$gdp_growth/100 + 1
 ## let's do some correlations
-corr_matrix <- merged_data %>% select(MDG1, MDG2, MDG3, MDG4, MDG5, MDG6, MDG7, MDG8, Conflict_and_War, gdp_growth_rate) %>% cor(use  = "complete")
+corr_matrix <- merged_data %>% select(MDG1, MDG2, MDG3, MDG4, MDG5, MDG6, MDG7, MDG8, Conflict_and_War, gdp_growth_rate , childmortality,lifeexpectancy, gdp_capita ) %>% cor(use  = "pairwise.complete.obs")
+
+
+corr_matrix <- merged_data %>% filter(year <= 1997) %>% select(MDG1, MDG2, MDG3, MDG4, MDG5, MDG6, MDG7, MDG8, Conflict_and_War, gdp_growth_rate , childmortality,lifeexpectancy, gdp_capita ) %>% cor(use  = "pairwise.complete.obs")
+# plot correlation matrix
+corrplot(corr_matrix, method = "color", type = 'lower',
+         col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200),
+         tl.col = "black", tl.srt = 45, tl.cex = 0.7)
+
+# Add a title
+title("Correlation Matrix - (1973-1997)")
+
+
+# do corr for last 25 years
+corr_matrix <- merged_data %>% filter(year > 1997) %>% select(MDG1, MDG2, MDG3, MDG4, MDG5, MDG6, MDG7, MDG8, Conflict_and_War, gdp_growth_rate , childmortality,lifeexpectancy, gdp_capita ) %>% cor(use  = "pairwise.complete.obs")
 
 # plot correlation matrix
 corrplot(corr_matrix, method = "color", type = 'lower',
@@ -223,12 +253,13 @@ corrplot(corr_matrix, method = "color", type = 'lower',
          tl.col = "black", tl.srt = 45, tl.cex = 0.7)
 
 # Add a title
-title("Correlation Matrix")
+title("Correlation Matrix (1998-2022)")
 
 ## let's run a regression of gdp growth on topic distribution
 
 # let's transform variables in log
 merged_data$log_gdp_growth <- log(merged_data$gdp_growth/100 + 1)
+merged_data$log_gdp_capita <- log(merged_data$gdp_capita)
 merged_data$log_MDG1 <- log(merged_data$MDG1 + 1)
 merged_data$log_MDG2 <- log(merged_data$MDG2 + 1)
 merged_data$log_MDG3 <- log(merged_data$MDG3 + 1)
@@ -239,9 +270,16 @@ merged_data$log_MDG7 <- log(merged_data$MDG7 + 1)
 merged_data$log_MDG8 <- log(merged_data$MDG8 + 1)
 merged_data$log_Conflict_and_War <- log(merged_data$Conflict_and_War + 1)
 
-model1 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War | year + continent, data = merged_data, cluster = "continent")
-model2 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War | year^continent, data = merged_data, cluster = "continent")
-model3 <- model1 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War | year^region, data = merged_data, cluster = "continent")
+filtered_data <- merged_data %>% filter(year > 1997)
+model1 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War  + gdp_capita | year + continent, data = filtered_data, cluster = "continent")
+model2 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War  + gdp_capita| year^continent, data = filtered_data, cluster = "continent")
+model3 <- feols(log_gdp_growth ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War  + gdp_capita| year^region, data = filtered_data, cluster = "continent")
 
-etable(model1, model2, model3, digits = 2, tex=T, se.below = FALSE)
+# model1 <- feols(log_gdp_capita ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War | year + continent, data = filtered_data, cluster = "continent")
+# model2 <- feols(log_gdp_capita ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War| year^continent, data = filtered_data, cluster = "continent")
+# model3 <- feols(log_gdp_capita ~ log_MDG1 + log_MDG2 + log_MDG3 + log_MDG4 + log_MDG5 + log_MDG6 + log_MDG7 + log_MDG8 + log_Conflict_and_War| year^region, data = filtered_data, cluster = "continent")
 
+
+
+etable(model1, model2, model3, digits = 2, tex=F, se.below = FALSE, drop = "gdp_capita" )
+etable(model1, model2, model3, digits = 2, tex=T, se.below = FALSE, drop = "gdp_capita")

@@ -54,8 +54,6 @@ for(i in 1:length(continents)) {
     ## let's do the sentiment analysis
     sentiment.df <- get_nrc_sentiment(temp.data$text)
     
-    ## do a median aggregation
-    
     summ.sentiment.df <- sentiment.df %>% summarise_all(sum)
     summ.sentiment.df$total <- sum(summ.sentiment.df)
     summ.sentiment.df$year <- t

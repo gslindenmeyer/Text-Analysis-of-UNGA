@@ -13,7 +13,7 @@ getwd()
 
 # relevant packages
 packages <- c("tidyverse", "tm", "slam", "rvest", "xml2", "stringdist", "countrycode", "quanteda", "ggrepel",
-              "SnowballC", "ggformula", "ggpubr", "scales", "readxl" , "stopwords", "wordcloud" )
+              "SnowballC", "ggformula", "ggpubr", "scales", "readxl" , "stopwords", "wordcloud", "proxy" )
 
 # check if installed, otherwise, install, omit warnings
 for(p in packages){
@@ -22,22 +22,11 @@ for(p in packages){
     library(p, character.only = TRUE)
   }
 }
-
 ## let's do the first analysis: 
 ## (1) Are the discourses of each country over the 50 years similar to each other? 
 ## for this, let's open the dataset of panel stemmed and do text similarity analysis
 
 load("data/corpus/all_panel_stemmed.rda")
-
-## let's use stringdist
-
-# create a function to calculate the similarity between two texts
-similarity <- function(x, y){
-  stringdist(x, y, method = "jw", p = 0.1)
-}
-
-# test
-similarity("hello", "hell3o")
 
 
 dtm.m <- as.matrix(dtm1)
@@ -78,7 +67,7 @@ for (country in countries){
     tmp.dtm <- dtm.m[ids,]
     tmp.dtm.m <- as.matrix(tmp.dtm)
 
-    # cosine distance: proxy
+    # distance: proxy
     cosine.distance <- proxy::dist(tmp.dtm.m, method="cosine") # cosine distances matrix
     jaccard.distance <- proxy::dist(tmp.dtm.m, method="jaccard")
     
@@ -90,6 +79,16 @@ for (country in countries){
     n_row <- n_row + 1
   }
 }
+
+
+## test cosine method
+#vector <- c("hello world")
+#vector2 <- c("hello")
+
+#dtm <- DocumentTermMatrix(c(vector, vector2))
+#dtm.m <- as.matrix(dtm)
+#proxy::dist(dtm.m, method="cosine")
+
 
 ## let's plot all 74 lines in a fancy plot as curves: 
 ## we need to transform the matrix into a data frame
@@ -151,10 +150,10 @@ ggplot(data = similarity.matrix.cosine.df, aes(x = year, y = similarity, group =
                   size = 4, segment.color = NA) +  # Add labels to the lines
   scale_color_manual(values = c("#2765A1", "lightgrey", "#EA922F", "#2765A1", "#2765A1", "lightgrey")) +  # Colors for the lines
   theme_minimal() +
-  labs(title = "Cosine Similarity Across Years",
+  labs(title = "Cosine Distance Across Years",
        subtitle = "Highlighting the 3 countries with most similarity and the least one",
        x = "Year",
-       y = "Cosine Similarity",
+       y = "Cosine Distance",
        color = "Country") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
         plot.title = element_text(size = 14, face = "bold"),
@@ -178,10 +177,10 @@ ggplot(data = similarity.matrix.jaccard.df, aes(x = year, y = similarity, group 
                   size = 4, segment.color = NA) +  # Add labels to the lines
   scale_color_manual(values = c("#2765A1", "#2765A1", "lightgrey", "#2765A1", "#EA922F", "lightgrey")) +  # Colors for the lines
   theme_minimal() +
-  labs(title = "Jaccard Similarity Across Years",
+  labs(title = "Jaccard Distance Across Years",
        subtitle = "Highlighting the 3 countries with most similarity and the least one",
        x = "Year",
-       y = "Jaccard Similarity",
+       y = "Jaccard Distance",
        color = "Country") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
         plot.title = element_text(size = 14, face = "bold"),
@@ -200,11 +199,11 @@ similarity.matrix.cosine.df %>%
   ggplot(aes(x = reorder(country, mean), y = mean)) +
   geom_bar(stat = "identity", fill = 'steelblue') +  # Use a more visually appealing color
   theme_minimal() +
-  labs(title = "Average in Time - Cosine Similarity",
+  labs(title = "Average in Time - Cosine Distance",
        subtitle = "Lowest 15 Countries by Average Similarity",
        x = "Country",
-       y = "Cosine Similarity") +
-  ylim(0,0.5) +
+       y = "Cosine Distance") +
+  ylim(0,1) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
         plot.title = element_text(size = 14, face = "bold"),
         plot.subtitle = element_text(size = 12))  # Adjust the text for better legibility
@@ -221,8 +220,8 @@ similarity.matrix.jaccard.df %>%
   ggplot(aes(x = reorder(country, mean), y = mean)) +
   geom_bar(stat = "identity", fill = '#EA922F') +  # Use a more visually appealing color
   theme_minimal() +
-  labs(title = "Average in Time - Jaccard Similarity",
-       subtitle = "Lowest 15 Countries by Average Similarity",
+  labs(title = "Average in Time - Jaccard Distance",
+       subtitle = "Lowest 15 Countries by Average Distance",
        x = "Country",
        y = "Jaccard Similarity") +
   ylim(0,1) +
