@@ -47,5 +47,7 @@ Jankin, Slava; Baturo, Alexander; Dasandi, Niheer, 2017, "United Nations General
 The GDP growth from 1973 to 2022 is collected from: 
 World Bank national accounts data, and OECD National Accounts data files.
 
+The World Bank panel is collected from World Bank API.
+
 ## Author
 - Guilherme Schultz Lindenmeyer
